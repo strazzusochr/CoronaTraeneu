@@ -154,121 +154,57 @@ function calculateSkyColors(gameMinutes: number): {
  */
 const DynamicLighting: React.FC<DynamicLightingProps> = ({ quality, castShadows = false }) => {
     const directionalLightRef = useRef<THREE.DirectionalLight>(null);
-    const fillLightRef = useRef<THREE.DirectionalLight>(null);
-    const rimLightRef = useRef<THREE.DirectionalLight>(null);
 
-    // CPU MODE: Forced low map size
-    const shadowMapSize = 512;
+    const gameTimeSeconds = useTimeEngine(state => state.gameTimeSeconds);
+    const gameMinutes = gameTimeSeconds / 60;
+    
+    // Memoize calculations to prevent heavy work on every render
+    const sunPosition = useMemo(() => calculateSunPosition(gameMinutes), [gameMinutes]);
+    const intensity = useMemo(() => calculateLightIntensity(gameMinutes), [gameMinutes]);
+    const skyColors = useMemo(() => calculateSkyColors(gameMinutes), [gameMinutes]);
 
-    // Aktualisiere Licht jeden Frame basierend auf Spielzeit
     useFrame(() => {
-        const gameMinutes = useTimeEngine.getState().gameTimeSeconds / 60;
-        const sunPosition = calculateSunPosition(gameMinutes);
-        const intensity = calculateLightIntensity(gameMinutes);
-        const skyColors = calculateSkyColors(gameMinutes);
-
         if (directionalLightRef.current) {
             directionalLightRef.current.position.set(...sunPosition);
             directionalLightRef.current.intensity = intensity.directional;
             directionalLightRef.current.color.copy(skyColors.sunColor);
         }
-
-        if (fillLightRef.current) {
-            fillLightRef.current.intensity = intensity.directional * 0.3;
-        }
-
-        if (rimLightRef.current) {
-            rimLightRef.current.intensity = intensity.directional * 0.2;
-        }
     });
 
     return (
-        <>
-            {/* PBR Environment (Image Based Lighting) - DISABLED FOR STABILITY */}
-            {/* <Environment preset="apartment" background={false} /> */}
+        <group name="DynamicLighting_System">
+            <hemisphereLight args={[0xB4D4FF, 0x504030, intensity.ambient]} />
 
-            {/* Hemisphere Light (Himmel/Boden) - Best for CPU performance */}
-            <hemisphereLight args={[0xB4D4FF, 0x504030, 0.7]} />
-
-            {/* Hauptlicht (Sonne/Mond) - NO SHADOWS ON CPU */}
             <directionalLight
                 ref={directionalLightRef}
-                position={[80, 100, 60]}
-                intensity={1.5}
-                castShadow={false}
+                position={sunPosition}
+                intensity={intensity.directional}
+                castShadow={castShadows && quality === 'HIGH'}
+                shadow-mapSize={[1024, 1024]}
             />
 
+            <ambientLight intensity={intensity.ambient * 0.5} color={0xFFFFFF} />
 
-            {/* Fill Light (weiche Schatten) */}
-            <directionalLight
-                ref={fillLightRef}
-                position={[-50, 50, -50]}
-                intensity={0.4}
-                castShadow={false}
-                color={0xFFFFFF}
-            />
-
-            {/* Rim Light (Hintergrundbeleuchtung) */}
-            <directionalLight
-                ref={rimLightRef}
-                position={[0, 30, -80]}
-                intensity={0.3}
-                castShadow={false}
-                color={0xB0C4DE}
-            />
-
-            {/* Ambient Light */}
-            <ambientLight intensity={0.15} color={0xFFFFFF} />
-        </>
-    );
-};
-
-/**
- * Dynamischer Himmel basierend auf Tageszeit
- */
-export const DynamicSky: React.FC = () => {
-    const skyRef = useRef<any>(null);
-
-    useFrame(() => {
-        if (!skyRef.current) return;
-        const gameMinutes = useTimeEngine.getState().gameTimeSeconds / 60;
-        const sunPosition = calculateSunPosition(gameMinutes);
-        const skyColors = calculateSkyColors(gameMinutes);
-
-        // Sky Material aktualisieren
-        if (skyRef.current.material) {
-            skyRef.current.material.uniforms.turbidity.value = skyColors.turbidity;
-            skyRef.current.material.uniforms.rayleigh.value = skyColors.rayleigh;
-            skyRef.current.material.uniforms.sunPosition.value.set(...sunPosition);
-        }
-    });
-
-    return (
-        <>
-            {/* Safety Light (Always on) */}
-            <hemisphereLight intensity={0.2} color="#ffffff" groundColor="#444444" />
-            
-            {/* Sky & Atmosphere */}
             <Sky 
                 distance={450000} 
-                sunPosition={sunPosition} 
-                inclination={0} 
-                azimuth={0.25} 
-                mieCoefficient={0.005}
-                mieDirectionalG={0.8}
-                rayleigh={3}
-                turbidity={10}
+                sunPosition={sunPosition}
+                turbidity={skyColors.turbidity}
+                rayleigh={skyColors.rayleigh}
             />
-            <Stars
-                radius={300}
-                depth={60}
-                count={5000}
-                factor={4}
-                saturation={0.5}
-            />
-        </>
+            
+            {intensity.starsOpacity > 0.1 && (
+                <Stars
+                    radius={300}
+                    depth={60}
+                    count={2000}
+                    factor={4}
+                    saturation={0.5}
+                />
+            )}
+        </group>
     );
 };
 
+export const DynamicSky: React.FC = () => null;
+
 export default DynamicLighting;
-export { calculateSunPosition, calculateLightIntensity, calculateSkyColors };

@@ -17,3 +17,4 @@ export const useGameStore = create<GameStore>((...a) => ({
 
 // Debug Access
 (window as any).gameStore = useGameStore;
+(window as any).getState = () => useGameStore.getState();

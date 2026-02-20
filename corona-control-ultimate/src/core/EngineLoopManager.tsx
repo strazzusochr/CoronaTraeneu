@@ -12,9 +12,9 @@ import { useTimeEngine } from './TimeEngine';
  * EVENTS: 0.2Hz (5000ms) - Long Background Events
  */
 
-const PHYSICS_HZ = 120;
-const AI_HZ = 10;
-const EVENT_HZ = 0.2;
+const PHYSICS_HZ = 60;
+const AI_HZ = 5;
+const EVENT_HZ = 0.1;
 
 const PHYSICS_STEP = 1 / PHYSICS_HZ;
 const AI_STEP = 1 / AI_HZ;

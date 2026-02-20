@@ -1,7 +1,6 @@
 import React, { useRef, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
-import { useSpatialGrid } from '@/systems/core/SpatialGridSystem';
 import { getFeatureState } from '@/core/FeatureFlags';
 import { useGameStore } from '@/stores/gameStore';
 import { EmotionalState } from '@/types/enums';
@@ -10,19 +9,27 @@ import { EmotionalState } from '@/types/enums';
  * V7.0 INSTANCED CROWD SYSTEM
  * Hocheffiziente Darstellung von Massen-NPCs basierend auf dem GameStore.
  */
-export const InstancedCrowd = () => {
-    const meshRef = useRef<THREE.InstancedMesh>(null);
-    const grid = useSpatialGrid();
-    const npcs = useGameStore(state => state.npcs);
-    const updateNpc = useGameStore(state => state.updateNpc);
+interface InstancedCrowdProps {
+    distanceThreshold?: number;
+}
 
-    const tempMatrix = useMemo(() => new THREE.Matrix4(), []);
+export const InstancedCrowd: React.FC<InstancedCrowdProps> = ({ distanceThreshold = 15 }) => {
+    const meshRef = useRef<THREE.InstancedMesh>(null);
+    const npcs = useGameStore(state => state.npcs);
+    const playerPos = useGameStore(state => state.player.position);
+
     const tempObject = useMemo(() => new THREE.Object3D(), []);
     const tempColor = useMemo(() => new THREE.Color(), []);
 
-    useFrame((state, delta) => {
+    const frameCount = useRef(0);
+
+    useFrame((state) => {
         if (!getFeatureState('CROWD_500')) return;
         if (!meshRef.current) return;
+        
+        // Update only every 3rd frame to save CPU
+        frameCount.current++;
+        if (frameCount.current % 3 !== 0) return;
 
         const time = state.clock.elapsedTime;
 
@@ -37,6 +44,19 @@ export const InstancedCrowd = () => {
         npcs.forEach((npc, i) => {
             if (i >= 500) return;
 
+            const dx = npc.position[0] - playerPos[0];
+            const dz = npc.position[2] - playerPos[2];
+            const distSq = dx * dx + dz * dz;
+
+            // Distance filtering: Only render if outside detailed range
+            if (distSq < distanceThreshold * distanceThreshold) {
+                tempObject.position.set(0, -100, 0);
+                tempObject.scale.set(0, 0, 0);
+                tempObject.updateMatrix();
+                meshRef.current!.setMatrixAt(i, tempObject.matrix);
+                return;
+            }
+
             // 1. Position-Sync
             tempObject.position.set(npc.position[0], npc.position[1], npc.position[2]);
             
@@ -48,7 +68,6 @@ export const InstancedCrowd = () => {
             
             if (distToStage < 40) {
                 // Bobbing animation based on distance to stage (simulating rhythm)
-                const freq = 2 + (Math.sin(time * 0.5) * 0.5);
                 const bob = Math.sin(time * 8 + i) * 0.05;
                 tempObject.position.y += Math.max(0, bob);
                 
@@ -65,13 +84,13 @@ export const InstancedCrowd = () => {
 
             // 2. Emotionale Visualisierung
             if (npc.emotions.current === EmotionalState.AGGRESSIVE) {
-                tempColor.set('#ff3333');
+                tempColor.set('#ff1111');
             } else if (npc.emotions.current === EmotionalState.STRESSED) {
-                tempColor.set('#8888ff');
+                tempColor.set('#5555ff');
             } else if (npc.type === 'POLICE') {
-                tempColor.set('#112244');
+                tempColor.set('#001133');
             } else {
-                tempColor.set('#ffffff');
+                tempColor.set('#cccccc');
             }
             meshRef.current!.setColorAt(i, tempColor);
         });
@@ -81,8 +100,8 @@ export const InstancedCrowd = () => {
     });
 
     return (
-        <instancedMesh ref={meshRef} args={[undefined, undefined, 500]} castShadow receiveShadow>
-            <capsuleGeometry args={[0.3, 1.2, 4, 8]} />
+        <instancedMesh ref={meshRef} args={[undefined, undefined, 500]} castShadow={false} receiveShadow={false}>
+            <capsuleGeometry args={[0.25, 1.2, 2, 4]} />
             <meshStandardMaterial />
         </instancedMesh>
     );

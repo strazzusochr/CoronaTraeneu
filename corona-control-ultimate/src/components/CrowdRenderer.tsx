@@ -1,27 +1,27 @@
-
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useGameStore } from '@/stores/gameStore';
-import NPC from './NPC';
-import InstancedCrowd from './InstancedCrowd';
-import * as THREE from 'three';
+import NPC from './characters/NPC';
+import { InstancedCrowd } from './characters/InstancedCrowd';
 
 const CrowdRenderer: React.FC = () => {
     const npcs = useGameStore(state => state.npcs);
     const playerPos = useGameStore(state => state.player.position);
-    const DISTANCE_THRESHOLD = 15; // PERFORMANCE: Reduziert auf 15m (vorher 50m) für CPU-Entlastung. InstancedCrowd übernimmt den Rest.
+    const DISTANCE_THRESHOLD = 35;
 
-    // Filter für nahe NPCs (High Detail)
-    // Wir rendern hier nur die, die NAH sind. InstancedCrowd kümmert sich um den Rest.
-    const detailedNPCs = npcs.filter(npc => {
-        const dx = playerPos[0] - npc.position[0];
-        const dz = playerPos[2] - npc.position[2];
-        const distSq = dx * dx + dz * dz;
-        return distSq <= DISTANCE_THRESHOLD * DISTANCE_THRESHOLD;
-    });
+    // Optimized filtering: Only render top 10 nearest NPCs as high-detail meshes
+    const detailedNPCs = useMemo(() => {
+        return npcs
+            .filter(npc => {
+                const dx = playerPos[0] - npc.position[0];
+                const dz = playerPos[2] - npc.position[2];
+                return (dx * dx + dz * dz) <= DISTANCE_THRESHOLD * DISTANCE_THRESHOLD;
+            })
+            .slice(0, 10);
+    }, [npcs, playerPos, DISTANCE_THRESHOLD]);
 
     return (
-        <>
-            {/* High Detail NPCs */}
+        <group name="CrowdRenderer">
+            {/* 1. High Detail NPCs */}
             {detailedNPCs.map(npc => (
                 <NPC
                     key={npc.id}
@@ -29,12 +29,13 @@ const CrowdRenderer: React.FC = () => {
                     type={npc.type}
                     state={npc.state}
                     position={npc.position}
+                    isDetailed={true}
                 />
             ))}
 
-            {/* Low Detail Background Crowd */}
+            {/* 2. Low Detail Background Crowd (Instanced) */}
             <InstancedCrowd distanceThreshold={DISTANCE_THRESHOLD} />
-        </>
+        </group>
     );
 };
 

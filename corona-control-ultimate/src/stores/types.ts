@@ -208,6 +208,7 @@ export interface GameStore {
   spawnWave: (count: number, type: NPCType, faction: any, centerPos?: [number, number, number]) => void;
   triggerScenario: (scenario: 'DEMONSTRATION' | 'POLICE_UNIT' | 'CLASH') => void;
   updateNpc: (id: number, data: Partial<NPCData>) => void;
+  batchUpdateNpcs: (updates: Map<number, Partial<NPCData>>) => void;
   markNpc: (id: number) => void;
 
   // Settings Visibility

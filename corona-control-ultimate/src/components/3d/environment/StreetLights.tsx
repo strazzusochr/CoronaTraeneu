@@ -45,7 +45,7 @@ export const StreetLight: React.FC<StreetLightProps> = ({
                 color={color} 
                 distance={15} 
                 decay={2}
-                castShadow
+                castShadow={false}
             />
             
             {/* Emissive part of the lamp */}

@@ -1,14 +1,15 @@
 import React, { useMemo } from 'react';
 import * as THREE from 'three';
 import { Detailed } from '@react-three/drei';
+import { RigidBody, CuboidCollider } from '@react-three/rapier';
 import { createBrickTexture, createConcreteTexture, createBrickNormalMap } from '@/utils/ProceduralTextures';
 
 const SEGMENTS = {
-    WINDOW_FRAME: 8,
-    BALCONY: 16,
-    ORNAMENT: 12,
-    COLUMN: 24,
-    CORNICE: 32,
+    WINDOW_FRAME: 2,
+    BALCONY: 6,
+    ORNAMENT: 4,
+    COLUMN: 8,
+    CORNICE: 8,
 };
 
 interface VienneseBuildingProps {
@@ -140,11 +141,11 @@ const VienneseBuilding: React.FC<VienneseBuildingProps> = ({
     const rustikaMat = useMemo(() => new THREE.MeshStandardMaterial({ color: 0xC8BFA8, roughness: 0.8 }), []);
     const roofMat = useMemo(() => new THREE.MeshStandardMaterial({ color: roofColor, roughness: 0.85 }), [roofColor]);
 
-    const frontWallGeo = useMemo(() => new THREE.BoxGeometry(width, totalHeight, 0.4, 32, 64, 2), [width, totalHeight]);
-    const sideWallGeo = useMemo(() => new THREE.BoxGeometry(0.4, totalHeight, depth, 2, 64, 16), [totalHeight, depth]);
+    const frontWallGeo = useMemo(() => new THREE.BoxGeometry(width, totalHeight, 0.4, 2, 8, 1), [width, totalHeight]);
+    const sideWallGeo = useMemo(() => new THREE.BoxGeometry(0.4, totalHeight, depth, 1, 8, 2), [totalHeight, depth]);
     const rustikaHeight = style === 'rustika' ? groundFloorHeight + upperFloorHeight : groundFloorHeight;
-    const rustikaGeo = useMemo(() => new THREE.BoxGeometry(width + 0.05, rustikaHeight, 0.15, 32, 16, 2), [width, rustikaHeight]);
-    const pilasterGeo = useMemo(() => new THREE.BoxGeometry(0.25, totalHeight - rustikaHeight, 0.08, 4, 48, 2), [totalHeight, rustikaHeight]);
+    const rustikaGeo = useMemo(() => new THREE.BoxGeometry(width + 0.05, rustikaHeight, 0.15, 2, 4, 1), [width, rustikaHeight]);
+    const pilasterGeo = useMemo(() => new THREE.BoxGeometry(0.25, totalHeight - rustikaHeight, 0.08, 1, 8, 1), [totalHeight, rustikaHeight]);
     const roofGeo = useMemo(() => {
         const shape = new THREE.Shape();
         shape.moveTo(-width / 2 - 0.25, 0); shape.lineTo(-width / 2 + 1.5, 3.5); shape.lineTo(width / 2 - 1.5, 3.5); shape.lineTo(width / 2 + 0.25, 0); shape.closePath();

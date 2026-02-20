@@ -37,19 +37,27 @@ export class NPCAIManager {
 
         const npcs = state.npcs;
         const playerPos = state.player.position;
+        const npcUpdates = new Map<number, Partial<NPCData>>();
 
         // 1. Behavior Tree Updates (Movement & Decision Making)
         btManager.update(npcs, playerPos, dt);
 
         // 2. Stats & Emotions Updates
-        npcs.forEach(npc => {
+        npcs.forEach((npc, index) => {
             if (npc.state === NPCState.DEAD || npc.state === NPCState.ARRESTED) return;
 
-            // 1. Stress-Berechnung (Nähe zum Spieler oder Chaos)
-            const distToPlayer = Math.sqrt(
+            // LOD: Update heavy logic seltener für ferne NPCs
+            const distSq = 
                 Math.pow(npc.position[0] - playerPos[0], 2) +
-                Math.pow(npc.position[2] - playerPos[2], 2)
-            );
+                Math.pow(npc.position[2] - playerPos[2], 2);
+            
+            // Radikale Drosselung: NPCs > 35m werden nur alle 3 Sekunden (30 Ticks) berechnet
+            if (distSq > 1225 && (now + index) % 30 !== 0) return;
+            // NPCs > 85m werden gar nicht mehr berechnet
+            if (distSq > 7225) return;
+
+            // 1. Stress-Berechnung (Nähe zum Spieler oder Chaos)
+            const distToPlayer = Math.sqrt(distSq);
 
             let newStress = npc.emotions.stress;
             if (distToPlayer < 5) newStress += 0.05; // Stress steigt in Spielernähe
@@ -69,13 +77,18 @@ export class NPCAIManager {
             // 3. Emotions-Check
             const nextEmotion = this.calculateEmotion({ ...npc, emotions: { ...npc.emotions, stress: newStress, aggression: newAggression } });
 
-            // 4. Update im Store (Batching wäre hier besser, aber initial ok)
-            if (nextEmotion !== npc.emotions.current || Math.abs(newStress - npc.emotions.stress) > 0.1) {
-                state.updateNpc(npc.id, {
+            // 4. Sammle Updates für Batching
+            if (nextEmotion !== npc.emotions.current || Math.abs(newStress - npc.emotions.stress) > 0.05) {
+                npcUpdates.set(npc.id, {
                     emotions: { ...npc.emotions, current: nextEmotion, stress: newStress, aggression: newAggression }
                 });
             }
         });
+
+        // 5. Ein einziger Store-Call für alle NPCs
+        if (npcUpdates.size > 0) {
+            (state as any).batchUpdateNpcs(npcUpdates);
+        }
     }
 
     public calculateEmotion(npc: Partial<NPCData>): EmotionalState {

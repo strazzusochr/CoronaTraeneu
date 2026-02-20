@@ -6,7 +6,7 @@ import { useEngineLoop } from '@/core/EngineLoopManager';
 import DynamicLighting from '@/rendering/DynamicLighting';
 import { CityEnvironment } from '@/components/3d/environment/CityEnvironment';
 import { InteractionDetector } from './InteractionDetector';
-import { InstancedCrowd } from '@/components/characters/InstancedCrowd';
+import CrowdRenderer from '@/components/CrowdRenderer';
 import { PlayerCharacter } from './entities/PlayerCharacter';
 import { PerformanceMonitor } from '@/components/ui/PerformanceMonitor';
 import { npcAiManager } from '@/managers/NPCAIManager';
@@ -16,7 +16,6 @@ import { PostProcessing } from '@/components/Effects/PostProcessing';
 import { Physics } from '@react-three/rapier';
 
 import { LoadingOverlay } from '@/components/ui/LoadingOverlay';
-import WorldStreamingRenderer from '@/world/WorldStreamingRenderer';
 
 /**
  * V7.0 HYPER AAA MASTER GAME CANVAS
@@ -108,19 +107,16 @@ const SceneContent = () => {
         }
     });
 
-    if (!isPlaying) return null;
-
     return (
         <>
             <DynamicLighting quality="HIGH" castShadows={true} />
 
             <Physics timeStep="vary">
-                <Suspense fallback={null}>
-                    <CityEnvironment />
-                    <WorldStreamingRenderer />
+                <CityEnvironment />
+                <Suspense fallback={<LoadingOverlay message="Lade Chunks..." />}>
                     <InteractionDetector />
                     <PlayerCharacter />
-                    <InstancedCrowd />
+                    <CrowdRenderer />
                 </Suspense>
             </Physics>
 
@@ -225,7 +221,7 @@ export const GameCanvas = () => {
                 };
             }}
         >
-            <Suspense fallback={<Html fullscreen><LoadingOverlay message="Rendere 3D-Welt..." /></Html>}>
+            <Suspense fallback={<Html fullscreen><LoadingOverlay message="Initialisiere Wien..." /></Html>}>
                 <SceneContent />
             </Suspense>
         </Canvas>

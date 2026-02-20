@@ -49,7 +49,7 @@ export const createGameSlice: StateCreator<GameStore, [], [], Pick<GameStore,
 
     player: {
         id: 'player_01',
-        position: [0, 1, 0],
+        position: [30, 1, 30],
         rotation: 0,
         health: GAME_BALANCE.player.maxHealth,
         stamina: GAME_BALANCE.player.maxStamina,
@@ -81,8 +81,8 @@ export const createGameSlice: StateCreator<GameStore, [], [], Pick<GameStore,
             outfitId: 'suit_01'
         };
 
-        // Crowd-Spawning: Teilweise vor der Bühne, teilweise in der Stadt verteilt
-        const crowd: NPCData[] = Array.from({ length: 500 }, (_, i) => {
+        // Crowd-Spawning: Optimized for performance/density balance
+        const crowd: NPCData[] = Array.from({ length: 200 }, (_, i) => {
             let posX, posZ;
             
             if (i < 350) {
@@ -94,8 +94,8 @@ export const createGameSlice: StateCreator<GameStore, [], [], Pick<GameStore,
             } else {
                 // 150 NPCs verteilt in der Stadt auf Gehwegen/Straßen
                 // Wir nutzen das Straßenraster (alle 50m eine Straße)
-                const gridX = Math.floor((Math.random() - 0.5) * 8); // -4 bis 3
-                const gridZ = Math.floor((Math.random() - 0.5) * 8);
+                const gridX = Math.floor((Math.random() - 0.5) * 6); // -3 bis 2
+                const gridZ = Math.floor((Math.random() - 0.5) * 6);
                 
                 const onSidewalk = Math.random() > 0.3;
                 const offset = onSidewalk ? 6 : 0; // 6m Offset für Gehweg
@@ -157,9 +157,9 @@ export const createGameSlice: StateCreator<GameStore, [], [], Pick<GameStore,
             useNotificationStore.getState().addNotification("WARNUNG: Erhöhte Aggressivität in Sektor 4 gemeldet.", "WARNING");
         }, 3000);
 
-        const achievements = state.achievements.includes('ACH_001')
+        const achievements = (state.achievements.includes('ACH_001')
             ? state.achievements
-            : [...state.achievements, 'ACH_001'];
+            : [...state.achievements, 'ACH_001']) as any[]; // Temporary fix for type mismatch
 
         return {
             gameState: {
@@ -472,10 +472,14 @@ export const createGameSlice: StateCreator<GameStore, [], [], Pick<GameStore,
 
     adjustKarma: (amount) => {
         set((state) => ({
-            player: {
-                ...state.player,
-                karma: Math.max(-100, Math.min(100, state.player.karma + amount))
-            }
+            player: { ...state.player, karma: Math.max(-100, Math.min(100, state.player.karma + amount)) }
         }));
-    }
+    },
+
+    batchUpdateNpcs: (updates: Map<number, Partial<NPCData>>) => set((state) => ({
+        npcs: state.npcs.map(npc => {
+            const update = updates.get(npc.id);
+            return update ? { ...npc, ...update } : npc;
+        })
+    }))
 });
