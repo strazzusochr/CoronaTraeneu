@@ -11,9 +11,10 @@ import { EmotionalState } from '@/types/enums';
  */
 interface InstancedCrowdProps {
     distanceThreshold?: number;
+    excludeIds?: Set<number>;
 }
 
-export const InstancedCrowd: React.FC<InstancedCrowdProps> = () => {
+export const InstancedCrowd: React.FC<InstancedCrowdProps> = ({ excludeIds = new Set() }) => {
     const meshRef = useRef<THREE.InstancedMesh>(null);
     const npcs = useGameStore(state => state.npcs);
 
@@ -50,17 +51,18 @@ export const InstancedCrowd: React.FC<InstancedCrowdProps> = () => {
             // überlagert sich halt (Instanced Mesh ohne Shadow, stört kaum) ODER
             // wir beheben das slice(0, 10) im CrowdRenderer und setzen es auf 30.
             
-            // Um das direkte Verschwinden zu verhindern: Wir blenden HIER NICHT aus.
-            // (Kommentieren den early return aus)
-            /*
-            if (distSq < distanceThreshold * distanceThreshold) {
+            // Exclude NPCs die bereits detailliert gerendert werden
+            if (excludeIds.has(npc.id)) {
                 tempObject.position.set(0, -100, 0);
                 tempObject.scale.set(0, 0, 0);
                 tempObject.updateMatrix();
                 meshRef.current!.setMatrixAt(i, tempObject.matrix);
+                
+                // Color dummy
+                tempColor.set('#000000');
+                meshRef.current!.setColorAt(i, tempColor);
                 return;
             }
-            */
 
             // 1. Position-Sync
             tempObject.position.set(npc.position[0], npc.position[1], npc.position[2]);

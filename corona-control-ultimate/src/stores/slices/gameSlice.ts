@@ -174,7 +174,6 @@ export const createGameSlice: StateCreator<GameStore, [], [], Pick<GameStore,
 
         const achievements = (state.achievements.includes('ACH_001')
             ? state.achievements
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             : [...state.achievements, 'ACH_001']) as unknown as any[]; // Temporary fix for type mismatch
 
         return {
@@ -377,7 +376,7 @@ export const createGameSlice: StateCreator<GameStore, [], [], Pick<GameStore,
                 position: pos,
                 interactionRadius: 4, // Erhöht auf 4m
                 label: type === NPCType.POLICE ? "Polizei" : "Bürger",
-                action: () => arrestSystem.startArrest(id)
+                action: () => interactionSystem.handleInteraction(id)
             });
 
             return npc;

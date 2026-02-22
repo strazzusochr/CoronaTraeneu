@@ -251,3 +251,9 @@ _Zuletzt aktualisiert: 18.02.2026 (Phasen 21–47: NPC-Basis-Stats, WaWe-/Deeska
 
 - Prüfpunkte gesetzt, Maßnahmen definiert, keine Blocker gefunden.
 - Folgearbeiten erfolgen schrittweise; Änderungen werden direkt in den jeweiligen Dateien umgesetzt und hier referenziert.
+
+### EMERGENCY BACKUP
+- **Datum:** 23.02.2026 00:31
+- **Branch:** emergency-backup-20260223_003100
+- **Tag:** emergency-20260223_003100
+- **Uncommitted:** 14 Dateien

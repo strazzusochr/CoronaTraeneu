@@ -10,6 +10,7 @@ import { GraphicsErrorBoundary } from '@/components/utility/GraphicsErrorBoundar
 
 import { LoadingOverlay } from '@/components/ui/LoadingOverlay';
 import DialogUI from '@/components/ui/DialogUI';
+import Inventory from '@/components/ui/Inventory';
 import PauseMenu from '@/components/ui/PauseMenu';
 import SettingsMenu from '@/components/ui/SettingsMenu';
 import { useTimeEngine } from '@/core/TimeEngine';
@@ -75,6 +76,7 @@ export default function App(): React.ReactElement {
             <MiniMap />
             <NotificationSystem />
             <DialogUI />
+            <Inventory />
           </Suspense>
         )}
 

@@ -15,11 +15,13 @@ import { useGameStore } from '@/stores/gameStore';
 interface InstancedCrowdProps {
     maxInstances?: number;
     distanceThreshold?: number;
+    excludeIds?: Set<number>;
 }
 
 const InstancedCrowd: React.FC<InstancedCrowdProps> = ({
     maxInstances = 500,
-    distanceThreshold = 15 // PERFORMANCE: Match CrowdRenderer threshold
+    distanceThreshold = 15, // PERFORMANCE: Match CrowdRenderer threshold
+    excludeIds = new Set()
 }) => {
     const meshRef = useRef<THREE.InstancedMesh>(null);
     const npcs = useGameStore(state => state.npcs);
@@ -58,8 +60,9 @@ const InstancedCrowd: React.FC<InstancedCrowdProps> = ({
             const dz = playerPos[2] - npc.position[2];
             const distance = Math.sqrt(dx * dx + dz * dz);
 
-            // Nur ferne NPCs als Instanzen rendern
-            if (distance > distanceThreshold && instanceIndex < maxInstances) {
+            // Render als Instanz, wenn es nicht in den detailedNPCs (excludeIds) ist
+            // oder wenn weiter weg (Fallback)
+            if (!excludeIds.has(npc.id) && instanceIndex < maxInstances) {
                 tempPosition.set(npc.position[0], npc.position[1], npc.position[2]);
                 // Rotation basierend auf ID (deterministisch)
                 const rotation = (npc.id * 0.5) % (Math.PI * 2);

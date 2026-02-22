@@ -1,7 +1,7 @@
 import React from 'react';
 import { Physics, RigidBody, CuboidCollider } from '@react-three/rapier';
 import PlayerV2 from '@/components/PlayerV2';
-import NPCV2 from '@/components/NPCV2';
+// import NPCV2 from '@/components/NPCV2'; // Not needed anymore
 
 // =====================================================
 // BUILD 60: PLAYER V2 + FIRST NPC
@@ -35,10 +35,8 @@ const PhysicsWorld: React.FC = () => {
         <Physics gravity={[0, -9.81, 0]} timeStep="vary">
             <PlayerV2 />
 
-// BUILD 61: 10 NPCs
-            {Array.from({ length: 10 }).map((_, i) => (
-                <NPCV2 key={i} position={[5 + (i % 3) * 2, 10, 5 + Math.floor(i / 3) * 2]} />
-            ))}
+// BUILD 61: Physics World cleaned up, NPCs handled by CrowdManager
+
 
             <PhysicsColliders />
         </Physics>

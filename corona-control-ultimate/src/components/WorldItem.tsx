@@ -4,12 +4,12 @@ import { Html } from '@react-three/drei';
 import * as THREE from 'three';
 import { useGameStore } from '@/stores/gameStore';
 
-const ITEM_TEMPLATES: Record<string, { name: string; color: string }> = {
-    'ITEM_MEDKIT': { name: 'Erste-Hilfe-Set', color: '#ff4444' },
-    'ITEM_SYRINGE': { name: 'Adrenalin-Spritze', color: '#44ff44' },
-    'ITEM_MASK': { name: 'FFP2-Maske', color: '#ffffff' },
-    'ITEM_RADIO': { name: 'Funkgerät', color: '#4444ff' },
-    'ITEM_PEPPER_SPRAY': { name: 'Pfefferspray', color: '#ffaa00' },
+const ITEM_TEMPLATES: Record<string, { name: string; color: string; type: string; maxStack: number; description: string; icon: string }> = {
+    'ITEM_MEDKIT': { name: 'Erste-Hilfe-Set', color: '#ff4444', type: 'CONSUMABLE', maxStack: 5, description: 'Heilt 50 HP.', icon: '💊' },
+    'ITEM_SYRINGE': { name: 'Adrenalin-Spritze', color: '#44ff44', type: 'CONSUMABLE', maxStack: 5, description: 'Schnelle Heilung.', icon: '💉' },
+    'ITEM_MASK': { name: 'FFP2-Maske', color: '#ffffff', type: 'CONSUMABLE', maxStack: 10, description: 'Schutzmaske für Zivilisten.', icon: '😷' },
+    'ITEM_RADIO': { name: 'Funkgerät', color: '#4444ff', type: 'EQUIPMENT', maxStack: 1, description: 'Kontakt zur Leitstelle.', icon: '📻' },
+    'ITEM_PEPPER_SPRAY': { name: 'Pfefferspray', color: '#ffaa00', type: 'EQUIPMENT', maxStack: 1, description: 'Betäubt für kurze Zeit.', icon: '🌶️' },
 };
 
 interface WorldItemProps {
@@ -22,6 +22,7 @@ export const WorldItem: React.FC<WorldItemProps> = ({ id, itemId, position }) =>
     const itemData = ITEM_TEMPLATES[itemId];
     const playerPosition = useGameStore(state => state.player.position);
     const removeWorldItem = useGameStore(state => state.removeWorldItem);
+    const addItem = useGameStore(state => state.addItem);
     const setPrompt = useGameStore(state => state.setPrompt);
 
     const [isHovered, setIsHovered] = useState(false);
@@ -59,8 +60,24 @@ export const WorldItem: React.FC<WorldItemProps> = ({ id, itemId, position }) =>
         const handleKeyDown = (e: KeyboardEvent) => {
             if (isHovered && e.key.toLowerCase() === 'e') {
                 console.log(`Picking up ${itemId}`);
-                removeWorldItem(id);
-                setPrompt(`AUFGEHOBEN: ${itemData?.name || itemId}`);
+                if (!itemData) return;
+                
+                const success = addItem({
+                    id: itemId,
+                    name: itemData.name,
+                    type: itemData.type,
+                    quantity: 1,
+                    maxStack: itemData.maxStack,
+                    description: itemData.description,
+                    icon: itemData.icon
+                });
+
+                if (success) {
+                    removeWorldItem(id);
+                    setPrompt(`AUFGEHOBEN: ${itemData.name}`);
+                } else {
+                    setPrompt(`INVENTAR VOLL: Kann ${itemData.name} nicht aufheben.`);
+                }
             }
         };
 

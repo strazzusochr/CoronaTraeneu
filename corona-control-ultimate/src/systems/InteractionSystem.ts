@@ -2,6 +2,10 @@ import { useGameStore } from '@/stores/gameStore';
 import { NPCState, NPCType } from '@/types/enums';
 import { arrestSystem } from './ArrestSystem';
 import TacticsManager from '@/managers/TacticsManager';
+import { useDialogStore } from '@/managers/DialogManager';
+import { KrauseDialog } from '@/data/dialogs/KrauseDialog';
+import { generateGenericDialog } from '@/data/dialogs/GenericDialogGenerator';
+import type { DialogTree } from '@/types/DialogTypes';
 
 /**
  * InteractionSystem (V7.0)
@@ -43,8 +47,8 @@ export class InteractionSystem {
             });
         }
 
-        // 2. Verhaften (Nur bei Randalierern oder nach Straftaten)
-        if (npc.type === NPCType.RIOTER || npc.state === NPCState.STUNNED) {
+        // 2. Verhaften (Für alle Zivilisten/Randalierer, die noch nicht verhaftet sind)
+        if (npc.type !== NPCType.POLICE && npc.state !== NPCState.ARRESTED) {
             actions.push({
                 label: "Verhaften",
                 action: () => arrestSystem.startArrest(npcId)
@@ -112,7 +116,17 @@ export class InteractionSystem {
 
     private startDialog(npcId: number) {
         console.log(`Starte Dialog mit NPC ${npcId}`);
-        // Hier würde der entsprechende Dialog-Baum geladen werden
+        const state = useGameStore.getState();
+        const npc = state.npcs.find(n => n.id === npcId);
+        if (!npc) return;
+
+        if (npc.type === NPCType.KRAUSE) {
+            useDialogStore.getState().startDialog(KrauseDialog);
+        } else {
+            // Dynamischer Standard-Dialog für Zivilisten und andere NPCs
+            const genericDialog = generateGenericDialog(npcId, npc.type, this.getNpcName(npc.type));
+            useDialogStore.getState().startDialog(genericDialog);
+        }
     }
 
     private applyMedicalAid(npcId: number, use_syringe: boolean) {
@@ -129,7 +143,6 @@ export class InteractionSystem {
         }
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     private giveMask(_npcId: number) {
         const state = useGameStore.getState();
         const slotIndex = state.inventory.findIndex(slot => slot.item?.id === 'ITEM_MASK');
