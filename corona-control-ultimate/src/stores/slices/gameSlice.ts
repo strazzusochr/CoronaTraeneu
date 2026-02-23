@@ -93,16 +93,16 @@ export const createGameSlice: StateCreator<GameStore, [], [], Pick<GameStore,
         };
 
         // ═══════════════════════════════════════════════════════
-        // NPC SPAWN SYSTEM - Logische Verteilung in der Stadt
+        // NPC SPAWN SYSTEM - Logische Verteilung (~100 NPCs)
         // Bühne bei [0, 0, -50], Park bei [-30, 0, 20]
         // Stephansdom bei [50, 0, -30]
         // ═══════════════════════════════════════════════════════
         const crowd: NPCData[] = [];
         let npcId = 2000;
 
-        // ── GRUPPE 1: Zuschauer vor der Bühne (50 NPCs) ──────────
+        // ── GRUPPE 1: Zuschauer vor der Bühne (25 NPCs) ──────────
         // Halbkreis vor der Bühne [0, 0, -50], Richtung Bühne schauend
-        for (let i = 0; i < 50; i++) {
+        for (let i = 0; i < 25; i++) {
             const angle = Math.random() * Math.PI; // Halbkreis
             const radius = 4 + Math.random() * 30; // 4m-34m Abstand
             const posX = Math.sin(angle - Math.PI / 2) * radius;
@@ -122,10 +122,10 @@ export const createGameSlice: StateCreator<GameStore, [], [], Pick<GameStore,
             });
         }
 
-        // ── GRUPPE 2: Polizei-Absperrung & Patrouillen (25 NPCs) ──
-        // Absperrungslinie vor der Bühne (10 NPCs in Reihe)
-        for (let i = 0; i < 10; i++) {
-            const posX = -20 + i * 4; // Reihe von links nach rechts
+        // ── GRUPPE 2: Polizei-Absperrung & Patrouillen (13 NPCs) ──
+        // Absperrungslinie vor der Bühne (5 NPCs in Reihe)
+        for (let i = 0; i < 5; i++) {
+            const posX = -12 + i * 6; // Reihe von links nach rechts (weiter gestreckt)
             const posZ = -50 + 35; // 35m vor der Bühne = Absperrung
             crowd.push({
                 id: npcId++,
@@ -139,13 +139,12 @@ export const createGameSlice: StateCreator<GameStore, [], [], Pick<GameStore,
                 lodLevel: 1, hairColor: '#111111', outfitId: 'uniform_01'
             });
         }
-        // Polizei-Patrouillen in der Stadt (15 NPCs, jeweils 2-3er Gruppen)
+        // Polizei-Patrouillen in der Stadt (8 NPCs, 4 Zweier-Gruppen)
         const policePatrolPoints: [number, number][] = [
             [30, 10], [30, 12], // Gruppe 1: Hauptstraße Ost
-            [-25, -20], [-23, -20], [-24, -18], // Gruppe 2: Westlicher Eingang
+            [-25, -20], [-23, -20], // Gruppe 2: Westlicher Eingang
             [50, -25], [52, -25], // Gruppe 3: Beim Stephansdom
-            [-40, 30], [-38, 30], [-39, 32], // Gruppe 4: Park-Eingang
-            [10, 40], [12, 40], [11, 42], // Gruppe 5: Nordseite
+            [-40, 30], [-38, 30], // Gruppe 4: Park-Eingang
         ];
         policePatrolPoints.forEach(([px, pz]) => {
             crowd.push({
@@ -161,16 +160,16 @@ export const createGameSlice: StateCreator<GameStore, [], [], Pick<GameStore,
             });
         });
 
-        // ── GRUPPE 3: Demonstranten (30 NPCs) ────────────────────
+        // ── GRUPPE 3: Demonstranten (15 NPCs) ────────────────────
         // In Gruppen formiert, teils aggressiv
-        for (let i = 0; i < 30; i++) {
+        for (let i = 0; i < 15; i++) {
             // 3 Cluster: links der Bühne, rechts der Bühne, am Eingang
             let posX: number, posZ: number;
-            if (i < 12) {
+            if (i < 6) {
                 // Cluster 1: Links der Bühne
                 posX = -25 + (Math.random() - 0.5) * 12;
                 posZ = -45 + (Math.random() - 0.5) * 12;
-            } else if (i < 22) {
+            } else if (i < 11) {
                 // Cluster 2: Rechts der Bühne
                 posX = 25 + (Math.random() - 0.5) * 12;
                 posZ = -45 + (Math.random() - 0.5) * 12;
@@ -181,22 +180,22 @@ export const createGameSlice: StateCreator<GameStore, [], [], Pick<GameStore,
             }
             crowd.push({
                 id: npcId++,
-                type: i < 20 ? NPCType.DEMONSTRATOR : NPCType.RIOTER,
+                type: i < 10 ? NPCType.DEMONSTRATOR : NPCType.RIOTER,
                 position: [posX, 1, posZ],
                 velocity: [0, 0, 0],
                 rotation: Math.random() * Math.PI * 2,
                 state: NPCState.IDLE,
-                faction: i < 20 ? Faction.CIVILIAN : Faction.RIOTER,
+                faction: i < 10 ? Faction.CIVILIAN : Faction.RIOTER,
                 emotions: { 
-                    current: i >= 20 ? EmotionalState.AGGRESSIVE : EmotionalState.STRESSED, 
-                    stress: i >= 20 ? 60 : 30, aggression: i >= 20 ? 50 : 10, fear: 0 
+                    current: i >= 10 ? EmotionalState.AGGRESSIVE : EmotionalState.STRESSED, 
+                    stress: i >= 10 ? 60 : 30, aggression: i >= 10 ? 50 : 10, fear: 0 
                 },
                 lodLevel: 2, hairColor: '#332211', outfitId: 'casual_01'
             });
         }
 
-        // ── GRUPPE 4: Stadt-Bewohner auf Gehwegen (40 NPCs) ──────
-        for (let i = 0; i < 40; i++) {
+        // ── GRUPPE 4: Stadt-Bewohner auf Gehwegen (20 NPCs) ──────
+        for (let i = 0; i < 20; i++) {
             // Auf Straßenraster verteilt (alle 50m)
             const gridX = Math.floor((Math.random() - 0.5) * 4); // -2 bis 1
             const gridZ = Math.floor((Math.random() - 0.5) * 4);
@@ -231,9 +230,9 @@ export const createGameSlice: StateCreator<GameStore, [], [], Pick<GameStore,
             });
         }
 
-        // ── GRUPPE 5: Park-Besucher (20 NPCs) ────────────────────
+        // ── GRUPPE 5: Park-Besucher (10 NPCs) ────────────────────
         // Park liegt bei [-30, 0, 20], mit Bänken und Spazierwegen
-        for (let i = 0; i < 20; i++) {
+        for (let i = 0; i < 10; i++) {
             const angle = Math.random() * Math.PI * 2;
             const radius = 3 + Math.random() * 20;
             const posX = -30 + Math.cos(angle) * radius;
@@ -244,29 +243,23 @@ export const createGameSlice: StateCreator<GameStore, [], [], Pick<GameStore,
                 position: [posX, 1, posZ],
                 velocity: [0, 0, 0],
                 rotation: Math.random() * Math.PI * 2,
-                state: i < 8 ? NPCState.SITTING : NPCState.WALK,
+                state: i < 4 ? NPCState.SITTING : NPCState.WALK,
                 faction: Faction.CIVILIAN,
                 emotions: { current: EmotionalState.CALM, stress: 0, aggression: 0, fear: 0 },
                 lodLevel: 2, hairColor: '#774433', outfitId: 'casual_01'
             });
         }
 
-        // ── GRUPPE 6: Radio & TV-Teams / Journalisten (10 NPCs) ──
-        // 2 Teams à 3 Personen + 4 Einzelreporter
+        // ── GRUPPE 6: Radio & TV-Teams / Journalisten (5 NPCs) ──
+        // 1 Team à 3 Personen + 2 Einzelreporter
         const mediaPositions: { pos: [number, number]; facing: number }[] = [
-            // TV-Team 1: Front-links der Bühne (Kameramann + Reporter + Techniker)
+            // TV-Team: Front-links der Bühne (Kameramann + Reporter + Techniker)
             { pos: [-15, -25], facing: Math.PI * 0.8 },
             { pos: [-13, -25], facing: Math.PI * 0.8 },
             { pos: [-14, -23], facing: Math.PI * 0.8 },
-            // TV-Team 2: Front-rechts der Bühne
-            { pos: [15, -25], facing: Math.PI * 0.2 },
-            { pos: [17, -25], facing: Math.PI * 0.2 },
-            { pos: [16, -23], facing: Math.PI * 0.2 },
-            // Einzelreporter: Verschiedene Standorte
+            // Einzelreporter
             { pos: [5, -30], facing: Math.PI },           // Mitte, Richtung Bühne
             { pos: [40, -15], facing: Math.PI * 1.5 },    // Bei Demonstranten rechts
-            { pos: [-35, -10], facing: 0 },                // Park-Eingang
-            { pos: [55, -28], facing: Math.PI * 0.5 },    // Beim Stephansdom
         ];
         mediaPositions.forEach(({ pos: [px, pz], facing }) => {
             crowd.push({
@@ -282,8 +275,8 @@ export const createGameSlice: StateCreator<GameStore, [], [], Pick<GameStore,
             });
         });
 
-        // ── GRUPPE 7: Touristen beim Dom / Haas Haus (15 NPCs) ───
-        for (let i = 0; i < 15; i++) {
+        // ── GRUPPE 7: Touristen beim Dom / Haas Haus (8 NPCs) ───
+        for (let i = 0; i < 8; i++) {
             // Cluster um den Stephansdom [50, 0, -30]
             const posX = 50 + (Math.random() - 0.5) * 20;
             const posZ = -30 + (Math.random() - 0.5) * 20;
@@ -300,14 +293,14 @@ export const createGameSlice: StateCreator<GameStore, [], [], Pick<GameStore,
             });
         }
 
-        // ── GRUPPE 8: WEGA Sicherheitskräfte (10 NPCs) ──────────
-        // Strategisch an Kreuzungen und Eingängen
+        // ── GRUPPE 8: WEGA Sicherheitskräfte (5 NPCs) ──────────
+        // Strategisch an Eingängen (Einzelposten)
         const wegaPositions: [number, number][] = [
-            [0, -80],   [2, -80],   // Hinter der Bühne (Backstage-Sicherung)
-            [-50, 0],   [-48, 0],   // Westlicher Stadt-Eingang
-            [70, 0],    [72, 0],    // Östlicher Eingang
-            [0, 50],    [2, 50],    // Nördlicher Eingang  
-            [30, -60],  [32, -60],  // Süd-Ost Flanke
+            [0, -80],    // Hinter der Bühne (Backstage)
+            [-50, 0],    // Westlicher Stadt-Eingang
+            [70, 0],     // Östlicher Eingang
+            [0, 50],     // Nördlicher Eingang  
+            [30, -60],   // Süd-Ost Flanke
         ];
         wegaPositions.forEach(([px, pz]) => {
             crowd.push({
