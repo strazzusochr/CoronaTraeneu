@@ -90,22 +90,28 @@ const LEVEL1_GROUND_DECALS: Array<{ id: string; position: [number, number, numbe
     { id: 'decal_crack_south', position: [2, 0.03, -5], type: 'crack' as const }
 ];
 
-// Generiere 20 statische Positionen für Schwedenfeuer im Park (X: -60..68, Z: -60..68)
-const PARK_FIRES: Array<{ id: string; position: [number, number, number] }> = (() => {
-    const fires = [];
-    const prng = { s: 99 };
-    const rand = () => { prng.s = (prng.s * 16807) % 2147483647; return (prng.s - 1) / 2147483646; };
-    for (let i = 0; i < 20; i++) {
-        let x = (rand() - 0.5) * 110; // -55 to 55
-        const z = (rand() - 0.5) * 110; // -55 to 55
-        // Halte die direkte Sichtachse in der Mitte (X: -10..10, Z: >0) etwas freier
-        if (Math.abs(x) < 15 && z > -10 && z < 60) {
-            x += (x > 0 ? 20 : -20);
-        }
-        fires.push({ id: `fire_${i}`, position: [x, 0.02, z] as [number, number, number] });
-    }
-    return fires;
-})();
+// ========================================================
+// SCHWEDENFEUER IM PARK: Strategisch platziert für maximale
+// Ausleuchtung. Ring-Formation + Zentrale Feuer.
+// Brennen von Abenddämmerung bis Morgengrauen.
+// ========================================================
+const PARK_FIRES: Array<{ id: string; position: [number, number, number] }> = [
+    // === ÄUSSERER RING (8 Feuer) - erhellt den gesamten Parkrand ===
+    { id: 'fire_ring_n',  position: [-30, 0.02, 40] },   // Nord
+    { id: 'fire_ring_ne', position: [-15, 0.02, 38] },   // Nordost
+    { id: 'fire_ring_e',  position: [-10, 0.02, 25] },   // Ost
+    { id: 'fire_ring_se', position: [-15, 0.02, 12] },   // Südost
+    { id: 'fire_ring_s',  position: [-30, 0.02, 8] },    // Süd
+    { id: 'fire_ring_sw', position: [-45, 0.02, 12] },   // Südwest
+    { id: 'fire_ring_w',  position: [-50, 0.02, 25] },   // West
+    { id: 'fire_ring_nw', position: [-45, 0.02, 38] },   // Nordwest
+    
+    // === INNERER KREIS (4 Feuer) - erhellt die Parkwege/Sitzbänke ===
+    { id: 'fire_inner_1', position: [-25, 0.02, 30] },   // Innerer Nord
+    { id: 'fire_inner_2', position: [-20, 0.02, 18] },   // Innerer Ost
+    { id: 'fire_inner_3', position: [-35, 0.02, 18] },   // Innerer West
+    { id: 'fire_inner_4', position: [-30, 0.02, 28] },   // Zentrum
+];
 
 // ======================================================
 // ROM STADTRASTER — Konstanten
