@@ -24,7 +24,6 @@ export const InstancedCrowd: React.FC<InstancedCrowdProps> = ({ excludeIds = new
     const frameCount = useRef(0);
 
     useFrame((state) => {
-        if (!getFeatureState('CROWD_500')) return;
         if (!meshRef.current) return;
         
         // Update only every 3rd frame to save CPU
@@ -89,15 +88,25 @@ export const InstancedCrowd: React.FC<InstancedCrowdProps> = ({ excludeIds = new
             tempObject.updateMatrix();
             meshRef.current!.setMatrixAt(i, tempObject.matrix);
 
-            // 2. Emotionale Visualisierung
+            // 2. Farb-Visualisierung nach Typ & Emotion
             if (npc.emotions.current === EmotionalState.AGGRESSIVE) {
-                tempColor.set('#ff1111');
-            } else if (npc.emotions.current === EmotionalState.STRESSED) {
-                tempColor.set('#5555ff');
+                tempColor.set('#ff1111'); // Rot = Aggressiv
             } else if (npc.type === 'POLICE') {
-                tempColor.set('#001133');
+                tempColor.set('#1a237e'); // Dunkelblau = Polizei
+            } else if (npc.type === 'WEGA') {
+                tempColor.set('#111111'); // Schwarz = WEGA Spezialeinheit
+            } else if (npc.type === 'JOURNALIST') {
+                tempColor.set('#ff8f00'); // Orange-Gelb = Presse/Medien
+            } else if (npc.type === 'TOURIST') {
+                tempColor.set('#81c784'); // Hellgrün = Touristen
+            } else if (npc.type === 'DEMONSTRATOR') {
+                tempColor.set('#e65100'); // Orange = Demonstranten
+            } else if (npc.type === 'RIOTER') {
+                tempColor.set('#b71c1c'); // Dunkelrot = Randalierer
+            } else if (npc.emotions.current === EmotionalState.STRESSED) {
+                tempColor.set('#5555ff'); // Blau = Gestresst
             } else {
-                tempColor.set('#cccccc');
+                tempColor.set('#cccccc'); // Grau-Weiß = Zivilisten
             }
             meshRef.current!.setColorAt(i, tempColor);
         });

@@ -92,56 +92,235 @@ export const createGameSlice: StateCreator<GameStore, [], [], Pick<GameStore,
             outfitId: 'suit_01'
         };
 
-        // Crowd-Spawning: Optimized for performance/density balance
-        const crowd: NPCData[] = Array.from({ length: 200 }, (_, i) => {
-            let posX, posZ;
-            
-            if (i < 350) {
-                // 350 NPCs vor der Bühne [0, 0, -50]
-                const angle = Math.random() * Math.PI; // Halbkreis vor der Bühne
-                const radius = 5 + Math.random() * 40; // 5m bis 45m Abstand
-                posX = Math.sin(angle - Math.PI/2) * radius;
-                posZ = -50 + Math.cos(angle - Math.PI/2) * radius;
-            } else {
-                // 150 NPCs verteilt in der Stadt auf Gehwegen/Straßen
-                // Wir nutzen das Straßenraster (alle 50m eine Straße)
-                const gridX = Math.floor((Math.random() - 0.5) * 6); // -3 bis 2
-                const gridZ = Math.floor((Math.random() - 0.5) * 6);
-                
-                const onSidewalk = Math.random() > 0.3;
-                const offset = onSidewalk ? 6 : 0; // 6m Offset für Gehweg
-                
-                if (Math.random() > 0.5) {
-                    // Auf einer Nord-Süd Straße/Gehweg
-                    posX = gridX * 50 + (Math.random() > 0.5 ? offset : -offset);
-                    posZ = (Math.random() - 0.5) * 400;
-                } else {
-                    // Auf einer Ost-West Straße/Gehweg
-                    posX = (Math.random() - 0.5) * 400;
-                    posZ = gridZ * 50 + (Math.random() > 0.5 ? offset : -offset);
-                }
+        // ═══════════════════════════════════════════════════════
+        // NPC SPAWN SYSTEM - Logische Verteilung in der Stadt
+        // Bühne bei [0, 0, -50], Park bei [-30, 0, 20]
+        // Stephansdom bei [50, 0, -30]
+        // ═══════════════════════════════════════════════════════
+        const crowd: NPCData[] = [];
+        let npcId = 2000;
 
-                // Sicherheitscheck: Nicht im Bühnenbereich [0,0,-50] spawnen
-                const distToStage = Math.sqrt(posX * posX + (posZ + 50) * (posZ + 50));
-                if (distToStage < 30) {
-                    posX += 40;
-                    posZ += 40;
-                }
-            }
-
-            return {
-                id: 2000 + i,
-                type: Math.random() > 0.8 ? NPCType.RIOTER : NPCType.CIVILIAN,
-                position: [posX, 1, posZ] as [number, number, number],
-                velocity: [0, 0, 0] as [number, number, number],
-                rotation: Math.random() * Math.PI * 2,
+        // ── GRUPPE 1: Zuschauer vor der Bühne (50 NPCs) ──────────
+        // Halbkreis vor der Bühne [0, 0, -50], Richtung Bühne schauend
+        for (let i = 0; i < 50; i++) {
+            const angle = Math.random() * Math.PI; // Halbkreis
+            const radius = 4 + Math.random() * 30; // 4m-34m Abstand
+            const posX = Math.sin(angle - Math.PI / 2) * radius;
+            const posZ = -50 + Math.cos(angle - Math.PI / 2) * radius;
+            // Richtung zur Bühne schauen
+            const rotation = Math.atan2(-posX, -(-50 - posZ));
+            crowd.push({
+                id: npcId++,
+                type: NPCType.CIVILIAN,
+                position: [posX, 1, posZ],
+                velocity: [0, 0, 0],
+                rotation,
                 state: NPCState.IDLE,
                 faction: Faction.CIVILIAN,
                 emotions: { current: EmotionalState.NEUTRAL, stress: 0, aggression: 0, fear: 0 },
-                lodLevel: 2,
-                hairColor: '#442211',
-                outfitId: 'casual_01'
-            };
+                lodLevel: 2, hairColor: '#553311', outfitId: 'casual_01'
+            });
+        }
+
+        // ── GRUPPE 2: Polizei-Absperrung & Patrouillen (25 NPCs) ──
+        // Absperrungslinie vor der Bühne (10 NPCs in Reihe)
+        for (let i = 0; i < 10; i++) {
+            const posX = -20 + i * 4; // Reihe von links nach rechts
+            const posZ = -50 + 35; // 35m vor der Bühne = Absperrung
+            crowd.push({
+                id: npcId++,
+                type: NPCType.POLICE,
+                position: [posX, 1, posZ],
+                velocity: [0, 0, 0],
+                rotation: Math.PI, // Richtung Publikum
+                state: NPCState.IDLE,
+                faction: Faction.POLICE,
+                emotions: { current: EmotionalState.NEUTRAL, stress: 0, aggression: 0, fear: 0 },
+                lodLevel: 1, hairColor: '#111111', outfitId: 'uniform_01'
+            });
+        }
+        // Polizei-Patrouillen in der Stadt (15 NPCs, jeweils 2-3er Gruppen)
+        const policePatrolPoints: [number, number][] = [
+            [30, 10], [30, 12], // Gruppe 1: Hauptstraße Ost
+            [-25, -20], [-23, -20], [-24, -18], // Gruppe 2: Westlicher Eingang
+            [50, -25], [52, -25], // Gruppe 3: Beim Stephansdom
+            [-40, 30], [-38, 30], [-39, 32], // Gruppe 4: Park-Eingang
+            [10, 40], [12, 40], [11, 42], // Gruppe 5: Nordseite
+        ];
+        policePatrolPoints.forEach(([px, pz]) => {
+            crowd.push({
+                id: npcId++,
+                type: NPCType.POLICE,
+                position: [px, 1, pz],
+                velocity: [0, 0, 0],
+                rotation: Math.random() * Math.PI * 2,
+                state: NPCState.IDLE,
+                faction: Faction.POLICE,
+                emotions: { current: EmotionalState.NEUTRAL, stress: 0, aggression: 0, fear: 0 },
+                lodLevel: 2, hairColor: '#111111', outfitId: 'uniform_01'
+            });
+        });
+
+        // ── GRUPPE 3: Demonstranten (30 NPCs) ────────────────────
+        // In Gruppen formiert, teils aggressiv
+        for (let i = 0; i < 30; i++) {
+            // 3 Cluster: links der Bühne, rechts der Bühne, am Eingang
+            let posX: number, posZ: number;
+            if (i < 12) {
+                // Cluster 1: Links der Bühne
+                posX = -25 + (Math.random() - 0.5) * 12;
+                posZ = -45 + (Math.random() - 0.5) * 12;
+            } else if (i < 22) {
+                // Cluster 2: Rechts der Bühne
+                posX = 25 + (Math.random() - 0.5) * 12;
+                posZ = -45 + (Math.random() - 0.5) * 12;
+            } else {
+                // Cluster 3: Beim U-Bahn-Eingang
+                posX = 25 + (Math.random() - 0.5) * 10;
+                posZ = -30 + (Math.random() - 0.5) * 10;
+            }
+            crowd.push({
+                id: npcId++,
+                type: i < 20 ? NPCType.DEMONSTRATOR : NPCType.RIOTER,
+                position: [posX, 1, posZ],
+                velocity: [0, 0, 0],
+                rotation: Math.random() * Math.PI * 2,
+                state: NPCState.IDLE,
+                faction: i < 20 ? Faction.CIVILIAN : Faction.RIOTER,
+                emotions: { 
+                    current: i >= 20 ? EmotionalState.AGGRESSIVE : EmotionalState.STRESSED, 
+                    stress: i >= 20 ? 60 : 30, aggression: i >= 20 ? 50 : 10, fear: 0 
+                },
+                lodLevel: 2, hairColor: '#332211', outfitId: 'casual_01'
+            });
+        }
+
+        // ── GRUPPE 4: Stadt-Bewohner auf Gehwegen (40 NPCs) ──────
+        for (let i = 0; i < 40; i++) {
+            // Auf Straßenraster verteilt (alle 50m)
+            const gridX = Math.floor((Math.random() - 0.5) * 4); // -2 bis 1
+            const gridZ = Math.floor((Math.random() - 0.5) * 4);
+            const sidewalkOffset = 6; // Gehweg 6m neben Straße
+            
+            let posX: number, posZ: number;
+            if (Math.random() > 0.5) {
+                posX = gridX * 50 + (Math.random() > 0.5 ? sidewalkOffset : -sidewalkOffset);
+                posZ = (Math.random() - 0.5) * 200;
+            } else {
+                posX = (Math.random() - 0.5) * 200;
+                posZ = gridZ * 50 + (Math.random() > 0.5 ? sidewalkOffset : -sidewalkOffset);
+            }
+            
+            // Nicht in der Bühnen-Zone spawnen
+            const distToStage = Math.sqrt(posX * posX + (posZ + 50) * (posZ + 50));
+            if (distToStage < 40) {
+                posX += 50;
+                posZ += 50;
+            }
+
+            crowd.push({
+                id: npcId++,
+                type: NPCType.CIVILIAN,
+                position: [posX, 1, posZ],
+                velocity: [0, 0, 0],
+                rotation: Math.random() * Math.PI * 2,
+                state: Math.random() > 0.7 ? NPCState.WALK : NPCState.IDLE,
+                faction: Faction.CIVILIAN,
+                emotions: { current: EmotionalState.NEUTRAL, stress: 0, aggression: 0, fear: 0 },
+                lodLevel: 2, hairColor: Math.random() > 0.5 ? '#664422' : '#221100', outfitId: 'casual_01'
+            });
+        }
+
+        // ── GRUPPE 5: Park-Besucher (20 NPCs) ────────────────────
+        // Park liegt bei [-30, 0, 20], mit Bänken und Spazierwegen
+        for (let i = 0; i < 20; i++) {
+            const angle = Math.random() * Math.PI * 2;
+            const radius = 3 + Math.random() * 20;
+            const posX = -30 + Math.cos(angle) * radius;
+            const posZ = 20 + Math.sin(angle) * radius;
+            crowd.push({
+                id: npcId++,
+                type: NPCType.CIVILIAN,
+                position: [posX, 1, posZ],
+                velocity: [0, 0, 0],
+                rotation: Math.random() * Math.PI * 2,
+                state: i < 8 ? NPCState.SITTING : NPCState.WALK,
+                faction: Faction.CIVILIAN,
+                emotions: { current: EmotionalState.CALM, stress: 0, aggression: 0, fear: 0 },
+                lodLevel: 2, hairColor: '#774433', outfitId: 'casual_01'
+            });
+        }
+
+        // ── GRUPPE 6: Radio & TV-Teams / Journalisten (10 NPCs) ──
+        // 2 Teams à 3 Personen + 4 Einzelreporter
+        const mediaPositions: { pos: [number, number]; facing: number }[] = [
+            // TV-Team 1: Front-links der Bühne (Kameramann + Reporter + Techniker)
+            { pos: [-15, -25], facing: Math.PI * 0.8 },
+            { pos: [-13, -25], facing: Math.PI * 0.8 },
+            { pos: [-14, -23], facing: Math.PI * 0.8 },
+            // TV-Team 2: Front-rechts der Bühne
+            { pos: [15, -25], facing: Math.PI * 0.2 },
+            { pos: [17, -25], facing: Math.PI * 0.2 },
+            { pos: [16, -23], facing: Math.PI * 0.2 },
+            // Einzelreporter: Verschiedene Standorte
+            { pos: [5, -30], facing: Math.PI },           // Mitte, Richtung Bühne
+            { pos: [40, -15], facing: Math.PI * 1.5 },    // Bei Demonstranten rechts
+            { pos: [-35, -10], facing: 0 },                // Park-Eingang
+            { pos: [55, -28], facing: Math.PI * 0.5 },    // Beim Stephansdom
+        ];
+        mediaPositions.forEach(({ pos: [px, pz], facing }) => {
+            crowd.push({
+                id: npcId++,
+                type: NPCType.JOURNALIST,
+                position: [px, 1, pz],
+                velocity: [0, 0, 0],
+                rotation: facing,
+                state: NPCState.IDLE,
+                faction: Faction.JOURNALIST,
+                emotions: { current: EmotionalState.NEUTRAL, stress: 10, aggression: 0, fear: 0 },
+                lodLevel: 1, hairColor: '#333333', outfitId: 'press_01'
+            });
+        });
+
+        // ── GRUPPE 7: Touristen beim Dom / Haas Haus (15 NPCs) ───
+        for (let i = 0; i < 15; i++) {
+            // Cluster um den Stephansdom [50, 0, -30]
+            const posX = 50 + (Math.random() - 0.5) * 20;
+            const posZ = -30 + (Math.random() - 0.5) * 20;
+            crowd.push({
+                id: npcId++,
+                type: NPCType.TOURIST,
+                position: [posX, 1, posZ],
+                velocity: [0, 0, 0],
+                rotation: Math.random() * Math.PI * 2,
+                state: Math.random() > 0.5 ? NPCState.WALK : NPCState.IDLE,
+                faction: Faction.CIVILIAN,
+                emotions: { current: EmotionalState.NEUTRAL, stress: 0, aggression: 0, fear: 0 },
+                lodLevel: 2, hairColor: '#886644', outfitId: 'tourist_01'
+            });
+        }
+
+        // ── GRUPPE 8: WEGA Sicherheitskräfte (10 NPCs) ──────────
+        // Strategisch an Kreuzungen und Eingängen
+        const wegaPositions: [number, number][] = [
+            [0, -80],   [2, -80],   // Hinter der Bühne (Backstage-Sicherung)
+            [-50, 0],   [-48, 0],   // Westlicher Stadt-Eingang
+            [70, 0],    [72, 0],    // Östlicher Eingang
+            [0, 50],    [2, 50],    // Nördlicher Eingang  
+            [30, -60],  [32, -60],  // Süd-Ost Flanke
+        ];
+        wegaPositions.forEach(([px, pz]) => {
+            crowd.push({
+                id: npcId++,
+                type: NPCType.WEGA,
+                position: [px, 1, pz],
+                velocity: [0, 0, 0],
+                rotation: Math.random() * Math.PI * 2,
+                state: NPCState.IDLE,
+                faction: Faction.POLICE,
+                emotions: { current: EmotionalState.NEUTRAL, stress: 0, aggression: 0, fear: 0 },
+                lodLevel: 1, hairColor: '#111111', outfitId: 'wega_01'
+            });
         });
 
         // V7.0: Register all NPCs in the POI system
